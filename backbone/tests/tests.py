@@ -5,9 +5,10 @@ from django.contrib.auth.models import User, Permission
 from django.core.urlresolvers import reverse
 from django.test import TestCase
 from django.utils.translation import ugettext as _
+from backbone import BackboneSite
 
 from backbone.tests.models import Product, Brand, Category, ExtendedProduct
-from backbone.tests.backbone_api import BrandBackboneView
+from backbone.tests.backbone_api import BrandBackboneView, BackboneSiteProductBackboneView
 
 
 class TestHelper(TestCase):
@@ -574,3 +575,51 @@ class InvalidViewTests(TestHelper):
             self.client.get(url)
         except AttributeError, err:
             self.assertEqual(str(err), "Invalid field: invalid_field")
+
+
+class BackboneSiteTests(TestCase):
+    def register_view(self, backbone_site, **kwargs):
+        backbone_view_class = BackboneSiteProductBackboneView
+        backbone_site.register(backbone_view_class, **kwargs)
+        registered_view = {'backbone_view_class': backbone_view_class}
+
+        if kwargs:
+            registered_view.update(kwargs)
+        return registered_view
+
+    def test_register_backbone_view(self):
+        backbone_site = BackboneSite()
+        registered_view = self.register_view(backbone_site)
+
+        self.assertTrue(registered_view in backbone_site._registry)
+
+    def test_register_backbone_view_with_kwargs(self):
+        backbone_site = BackboneSite()
+        registered_view = self.register_view(backbone_site, \
+            **{'url_path_prefix': '/test-base-url-name',
+               'url_path_suffix': '/test-url-path-prefix',
+               'base_url_name': 'test_base_url_name'})
+
+        self.assertTrue(registered_view in backbone_site._registry)
+
+    def test_unregister_backbone_view(self):
+        backbone_site = BackboneSite()
+        registered_view = self.register_view(backbone_site)
+
+        backbone_site.unregister(registered_view.get('backbone_view_class'))
+
+        self.assertEqual(len(backbone_site._registry), 0)
+
+    def test_get_urls(self):
+        backbone_site = BackboneSite()
+        registered_view = self.register_view(backbone_site, \
+                        **{'url_path_prefix': '^test-path-prefix',
+                           'url_path_suffix': '/test-url-path-suffix',
+                           'base_url_name': 'test_base_url_name'})
+
+        urlpatterns = backbone_site.get_urls()
+
+        self.assertTrue(len(urlpatterns) == 2)
+        self.assertTrue(urlpatterns[0].name == 'test_base_url_name')
+        self.assertTrue(urlpatterns[1].name == 'test_base_url_name_detail')
+

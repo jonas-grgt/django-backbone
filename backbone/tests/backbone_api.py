@@ -56,3 +56,14 @@ class ExtendedProductBackboneView(BackboneAPIView):
         'price', 'order', 'is_priced_under_10', 'get_first_category_id', 'description',)
 
 backbone.site.register(ExtendedProductBackboneView)
+
+
+class BackboneSiteProductBackboneView(BackboneAPIView):
+    model = ExtendedProduct
+    display_fields = ('creation_date', 'name', 'brand', 'categories',
+                      'price', 'order', 'is_priced_under_10', 'get_first_category_id', 'description',)
+
+backbone.site.register(BackboneSiteProductBackboneView,\
+    **{'url_path_prefix': 'test-base-url-name',
+       'url_path_suffix': '/test-url-path-prefix',
+       'base_url_name': 'test_base_url_name'})
